@@ -50,7 +50,7 @@ def startup():
           fire.update({'left' : str(spots_left[i+1]-1)})
           fire = fire.parent()
 
-
+#yolo
 def spaces_available(lot_number):
     return int(Firebase(url).child('current').child(str(lot_number)).get()['left'])
 
