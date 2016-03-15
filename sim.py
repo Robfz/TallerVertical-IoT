@@ -24,9 +24,23 @@ def prepare_LCD():
 def print_capacities_LCD(zone_1_cap, zone_2_cap, myLcd):
 	myLcd.clear()
 	myLcd.setCursor(0,0)
-	myLcd.write("Zone 1: " + str(zone_1_cap) + " SPOTS.")
-	myLcd.setCursor(1,0)
-	myLcd.write("Zone 2: " + str(zone_2_cap) + " SPOTS.")
+	if(zone_1_cap <= 9 and zone_2_cap <= 9):
+		myLcd.write("Zone 1: 0" + str(zone_1_cap) + " SPOTS")
+		myLcd.setCursor(1,0)
+		myLcd.write("Zone 2: 0" + str(zone_2_cap) + " SPOTS")
+	elif(zone_1_cap > 9 and zone_2_cap <= 9):
+		myLcd.write("Zone 1: " + str(zone_1_cap) + " SPOTS")
+		myLcd.setCursor(1,0)
+		myLcd.write("Zone 2: 0" + str(zone_2_cap) + " SPOTS")
+	
+	elif(zone_1_cap <= 9 and zone_2_cap > 9):
+		myLcd.write("Zone 1: 0" + str(zone_1_cap) + " SPOTS")
+		myLcd.setCursor(1,0)
+		myLcd.write("Zone 2: " + str(zone_2_cap) + " SPOTS")
+	elif(zone_1_cap > 9 and zone_2_cap > 9):
+		myLcd.write("Zone 1: " + str(zone_1_cap) + " SPOTS")
+		myLcd.setCursor(1,0)
+		myLcd.write("Zone 2: " + str(zone_2_cap) + " SPOTS")
 
 def print_text_LCD(string, string2, myLcd):
 	myLcd.clear()
@@ -50,34 +64,41 @@ def listen(zone_1_cap, zone_2_cap):
 	myLcd = prepare_LCD()
 	print_capacities(zone_1_cap, zone_2_cap)
 	print_capacities_LCD(zone_1_cap, zone_2_cap, myLcd)
+	is_full = False
 	while (1):
 		if button.value() == 1:
 			if zone_1_cap > 0:
 				zone_1_cap = zone_1_cap - 1
 				print_capacities(zone_1_cap, zone_2_cap)
 				print_capacities_LCD(zone_1_cap, zone_2_cap, myLcd)
-		elif button2.value() == 1:
+				is_full = True
+		if button2.value() == 1:
 			if zone_2_cap > 0 :
 				zone_2_cap = zone_2_cap - 1	
 				print_capacities(zone_1_cap, zone_2_cap)
 				print_capacities_LCD(zone_1_cap, zone_2_cap, myLcd)
-		elif zone_1_cap == 0 and zone_2_cap == 0:
-			print 'Parking full'
-			print_text_LCD("Parking Full :(", "Please wait.", myLcd)
-		time.sleep(1)
+				is_full = True
 
 		if touch.isPressed():
 			if zone_1_cap < 20:
 				zone_1_cap = zone_1_cap + 1
 				print_capacities(zone_1_cap, zone_2_cap)
 				print_capacities_LCD(zone_1_cap, zone_2_cap, myLcd)
-		elif touch2.isPressed():
+				is_full = True
+		if touch2.isPressed():
 			if zone_2_cap < 20:
 				zone_2_cap = zone_2_cap + 1
 				print_capacities(zone_1_cap, zone_2_cap)
 				print_capacities_LCD(zone_1_cap, zone_2_cap, myLcd)
-		time.sleep(.5)
+				is_full = True
+		
 
+		if zone_1_cap == 0 and zone_2_cap == 0 and is_full:
+			print 'Parking full'
+			print_text_LCD("Parking Full :(", "Please wait.", myLcd)
+			is_full = False
+			
+		time.sleep(.5)
 def main():
 	zone_1_cap = 20
 	zone_2_cap = 20
