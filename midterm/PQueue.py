@@ -3,10 +3,19 @@ import Zone
 import User
 import Sector
 import math
+import time
+import signal
+
 from firebase import firebase
 
 database = firebase.FirebaseApplication('https://spot2016.firebaseio.com', None)
 
+listen = 1
+
+def sigint_handler(signum, frame):
+    print('SIGINT caught, exiting gracefully...')
+    global listen
+    listen = 0
 
 def populate_db():
     database.put('/zones', 'Zona 1',
@@ -46,9 +55,12 @@ def get_users():
     users = list()
     db_result = database.get('/usuarios', None)
     for result in db_result:
+        result = db_result[result]
+        user_email = result['email']
         user_name = result['name']
         user_pref = result['horario']['Monday']
-        users.append(User.User(user_name, user_pref))
+        user_plates = result['placas']
+        users.append(User.User(user_email, user_pref, user_name, user_plates))
 
     return users
 
@@ -64,15 +76,8 @@ def get_sectors():
 
 
 def update_zone(zone):
-    database.put('/zones', zone.get_name(),
-                 {'current_cap': zone.get_current_cap() + 1,
-                  'max_cap': zone.get_max_cap(),
-                  'name': zone.get_name(),
-                  'position': {
-                       'lat': zone.get_lat(),
-                       'lon': zone.get_lon()
-                    }
-                  })
+    database.patch('/zones/' + zone.get_name(),
+                   {'current_cap': zone.get_current_cap() + 1})
 
 
 def get_user_pref_sector(user, sectors):
@@ -95,6 +100,14 @@ def user_score(zone, sector):
     return distance
 
 
+def dispatch_job(job):
+    user_name = job
+    user_json = database.get('/usuarios/' + user_name, None)
+    user = User.User(user_json['email'], user_json['horario']['Monday'],
+                     user_json['name'], user_json['placas'])
+    return user
+
+
 def suggest(zones, sectors, user):
     pqueue = Queue.PriorityQueue()
 
@@ -113,17 +126,29 @@ def suggest(zones, sectors, user):
     print "with score = " + str(user_score(suggested_zone, sector))
     update_zone(suggested_zone)
 
+    return  suggested_zone
+
 
 def main():
+    signal.signal(signal.SIGINT, sigint_handler)
 
     populate_db()
 
-    users = get_users()
     sectors = get_sectors()
+    zones = build_zones()
 
-    for user in users:
-        zones = build_zones()
-        suggest(zones, sectors, user)
+    while listen:
+        print "Listening for jobs..."
+        jobs = database.get('/jobs', None)
+        if jobs is None:
+            time.sleep(1.0)
+            continue
+        for job in jobs:
+            if jobs[job] != 'true':
+                continue
+            suggested = suggest(zones, sectors, dispatch_job(job))
+            database.put('/jobs', job, suggested.get_name())
+        time.sleep(1.0)
 
 
 if __name__ == '__main__':
