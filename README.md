@@ -48,4 +48,23 @@ It has been developed for Android using Android Studios and it's already availab
 The link to Android Studio is the next one: [Android](http://developer.android.com/intl/es/index.html).
 
 Through the Firebase docs Android [tutorial](https://www.firebase.com/docs/android/) we were easily able to manipulate the database through the application.
+
+### The Edison
+
+All the Edison-side code is written in Python. The following is a brief guide of how to use the code.
+
+To create a process to serve the app requests run:
+
+`python PQueue.py`
  
+And to run a 2-zone example using sensors connected to 2 Edison boards run:
+
+`python PQueue_demo.py`
+
+and and the second Edison:
+
+`python PQueue_demo_slave`
+
+The code provided are only brief examples of want can be done. 
+
+Contributions are encouraged!
