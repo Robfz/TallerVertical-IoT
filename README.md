@@ -73,4 +73,21 @@ The administrators page was done in HTLM, CSS and JavaScript so that it can conn
 
 The teams web page was developed using programing languages such as HTML and CSS, this pages is just to give information about the team members and how we developed the idea for this system that we created.
 
+## Logo and mascot Design documentation:
+ 
+We quickly decided that the concept of our project must something related to finding, the two first designs included a magnifying glass (the universal symbol for ‘search’).
+
+From there on we decided ‘It must be a detective’, a gumshoe that will find the parking spot for you, so I decided to draw a cute little detective, but it ended up looking generic.
+
+So in an effort to make it look friendlier we decided to go to the second detective related icon, a dog. Since then on I went through various styles and concepts.
+
+We decided to go with the more minimalistic design of just the dog
+silhouette that can double as both logo and mascot.
+
+This gave us Spot, the detective dog; he will go find a parking space for you. Then we asked an expert to digitize the logo and develop the rest of the image. 
+
+And now we add the name and slogan in a cool typography and we are done with the logo and mascot.  
+
+![ds](http://www.credipass.com.mx/TallerVertical-IoT-Web/SpotPrinciple/img/Spot-Slogan.png)
+
 Contributions are encouraged!
