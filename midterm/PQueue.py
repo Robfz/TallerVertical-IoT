@@ -6,10 +6,12 @@ import math
 import time
 import signal
 
+import pyupm_i2clcd as lcd
+
 from firebase import firebase
 
 database = firebase.FirebaseApplication('https://spot2016.firebaseio.com', None)
-
+LCD = lcd.Jhd1313m1(0, 0x3E, 0x62)
 listen = 1
 
 def sigint_handler(signum, frame):
@@ -58,8 +60,8 @@ def get_users():
         result = db_result[result]
         user_email = result['email']
         user_name = result['name']
-        user_pref = result['horario']['Monday']
-        user_plates = result['placas']
+        user_pref = result['schedule']['Monday']
+        user_plates = result['plates']
         users.append(User.User(user_email, user_pref, user_name, user_plates))
 
     return users
@@ -103,8 +105,8 @@ def user_score(zone, sector):
 def dispatch_job(job):
     user_name = job
     user_json = database.get('/usuarios/' + user_name, None)
-    user = User.User(user_json['email'], user_json['horario']['Monday'],
-                     user_json['name'], user_json['placas'])
+    user = User.User(user_json['email'], user_json['schedule']['Monday'],
+                     user_json['name'], user_json['plates'])
     return user
 
 
@@ -129,6 +131,20 @@ def suggest(zones, sectors, user):
     return  suggested_zone
 
 
+def print_stop_sign():
+    LCD.setColor(255, 0, 0)
+    LCD.setCursor(0,0)
+    LCD.write("Spot park service")
+    LCD.setCursor(1,0)
+    LCD.write("                 ")
+
+
+def print_suggested_zone(suggested_zone):
+    LCD.setCursor(1,0)
+    LCD.setColor(0, 255, 0)
+    LCD.write(("Go to  " + suggested_zone.get_name()).encode('utf-8'))
+
+
 def main():
     signal.signal(signal.SIGINT, sigint_handler)
 
@@ -137,7 +153,11 @@ def main():
     sectors = get_sectors()
     zones = build_zones()
 
+    LCD.setCursor(0,0)
+    LCD.setColor(255, 0, 0)
+
     while listen:
+        print_stop_sign()
         print "Listening for jobs..."
         jobs = database.get('/jobs', None)
         if jobs is None:
@@ -147,6 +167,7 @@ def main():
             if jobs[job] != 'true':
                 continue
             suggested = suggest(zones, sectors, dispatch_job(job))
+            print_suggested_zone(suggested)
             database.put('/jobs', job, suggested.get_name())
         time.sleep(1.0)
 
