@@ -173,17 +173,9 @@ def suggest(zones, sectors, user):
 def print_stop_sign():
     LCD.setColor(255, 0, 0)
     LCD.setCursor(0,0)
-    LCD.write("SPOT park service")
+    LCD.write("Spot park service")
     LCD.setCursor(1,0)
     LCD.write("                 ")
-
-
-def print_stop_sign_full():
-    LCD.setColor(255, 0, 0)
-    LCD.setCursor(0,0)
-    LCD.write("SPOT park service")
-    LCD.setCursor(1,0)
-    LCD.write("Parking full   ")
 
 
 def print_suggested_zone(suggested_zone):
@@ -198,32 +190,30 @@ def print_zone_full(name):
     LCD.write((name + " is full").encode('utf-8'))
 
 
-def print_parking_full():
-    LCD.setCursor(1,0)
-    LCD.setColor(0, 255, 0)
-    LCD.write((name + " is full").encode('utf-8'))
-
-
 def dispatch_button1(zones, sectors):
-    if zones[0].is_full():
-        print_zone_full(zones[0].get_name())
+    if zones[1].is_full():
+        print_zone_full(zones[1].get_name())
     else:
-        update_zone(zones[0])
+        suggested = suggest(zones, sectors, None)
+        print 'Local job dispatched: in'
+        print 'Go to Zone ' + suggested.get_name()
+        print_suggested_zone(suggested)
+        update_zone(zones[1])
     time.sleep(0.5)
 
 
 def dispatch_touch1(zones, sectors):
-    if zones[0].is_empty():
+    if zones[1].is_empty():
         print 'Local job dispatched: out'
-        release_spot_zone(zones[0])
-        print 'Released spot from Zone ' + zones[0].get_name()
+        release_spot_zone(zones[1])
+        print 'Released spot from Zone ' + zones[1].get_name()
         time.sleep(0.5)
 
 
 def main():
     signal.signal(signal.SIGINT, sigint_handler)
-    button1 = grove.GroveButton(4)
-    touch1 = ttp223.TTP223(3)
+    button1 = grove.GroveButton(8)
+    touch1 = ttp223.TTP223(7)
 
     sectors = get_sectors()
 
@@ -235,21 +225,17 @@ def main():
     LCD.setColor(255, 0, 0)
 
     while listen:
+        print "Listening for jobs..."
+        print_stop_sign()
+
         zones = build_zones()
 
-        if zones[1].is_full() and zones[0].is_full():
-            print "Parking full..."
-            print_stop_sign_full()
-        else:
-            print "Listening for jobs..."
-            print_stop_sign()
-
-        if button1.value() == 1:
-            dispatch_button1(zones, sectors)
+        if button2.value() == 1:
+            dispatch_button2(zones, sectors)
             continue
 
-        if touch1.isPressed():
-            dispatch_touch1(zones, sectors)
+        if touch2.isPressed():
+            dispatch_touch2(zones, sectors)
             continue
 
 
