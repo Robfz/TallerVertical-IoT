@@ -7,6 +7,8 @@ import time
 import signal
 
 import pyupm_i2clcd as lcd
+import pyupm_grove as grove
+import pyupm_ttp223 as ttp223
 
 from firebase import firebase
 
@@ -14,10 +16,12 @@ database = firebase.FirebaseApplication('https://spot2016.firebaseio.com', None)
 LCD = lcd.Jhd1313m1(0, 0x3E, 0x62)
 listen = 1
 
+
 def sigint_handler(signum, frame):
     print('SIGINT caught, exiting gracefully...')
     global listen
     listen = 0
+
 
 def populate_db():
     database.put('/zones', 'Zona 1',
@@ -72,7 +76,7 @@ def get_sectors():
     db_result = database.get('/sectors', None)
     for result in db_result:
         lat = result['position']['lat']
-        lon = result['position']['long']
+        lon = result['position']['lon']
         sectors.append(Sector.Sector(result['name'], lat, lon))
     return sectors
 
@@ -82,7 +86,16 @@ def update_zone(zone):
                    {'current_cap': zone.get_current_cap() + 1})
 
 
+def release_spot_zone(zone):
+    print str(zone.get_current_cap())
+    print str(zone.get_current_cap() - 1)
+    database.patch('/zones/' + zone.get_name(),
+                   {'current_cap': zone.get_current_cap() - 1})
+
+
 def get_user_pref_sector(user, sectors):
+    if user is None:
+        return None
     sector_interest = None
     for sector in sectors:
         if sector.get_name() == user.get_schedule():
@@ -102,7 +115,7 @@ def user_score(zone, sector):
     return distance
 
 
-def dispatch_job(job):
+def get_user(job):
     user_name = job
     user_json = database.get('/usuarios/' + user_name, None)
     user = User.User(user_json['email'], user_json['schedule']['Monday'],
@@ -124,8 +137,11 @@ def suggest(zones, sectors, user):
         pqueue.put((zone.get_occupation() + user_score(zone, sector), zone))
 
     suggested_zone = pqueue.get()[1]
-    print "User " + user.get_name() + " goes to: " + suggested_zone.get_name()
-    print "with score = " + str(user_score(suggested_zone, sector))
+    if user is None:
+        print "Unknown user dispatched"
+    else:
+        print "User " + user.get_name() + " goes to: " + suggested_zone.get_name()
+        print "with score = " + str(user_score(suggested_zone, sector))
     update_zone(suggested_zone)
 
     return  suggested_zone
@@ -145,10 +161,38 @@ def print_suggested_zone(suggested_zone):
     LCD.write(("Go to  " + suggested_zone.get_name()).encode('utf-8'))
 
 
+def dispatch_app_job(jobs, zones, sectors):
+    if jobs is None:
+        time.sleep(0.5)
+        return
+    for job in jobs:
+        if jobs[job] != 'true':
+            continue
+        suggested = suggest(zones, sectors, get_user(job))
+        print_suggested_zone(suggested)
+        database.put('/jobs', job, 'Zone ' + suggested.get_name())
+    time.sleep(1.0)
+
+
+def dispatch_button(zones, sectors):
+    suggested = suggest(zones, sectors, None)
+    print 'Local job dispatched: in'
+    print 'Go to Zone ' + suggested.get_name()
+    print_suggested_zone(suggested)
+    time.sleep(1.0)
+
+
+def dispatch_touch(zones, sectors):
+    print 'Local job dispatched: out'
+    release_spot_zone(zones[0])
+    print 'Released spot from Zone ' + zones[0].get_name()
+    time.sleep(1.0)
+
+
 def main():
     signal.signal(signal.SIGINT, sigint_handler)
-
-    populate_db()
+    button = grove.GroveButton(4)
+    touch = ttp223.TTP223(3)
 
     sectors = get_sectors()
     zones = build_zones()
@@ -157,19 +201,21 @@ def main():
     LCD.setColor(255, 0, 0)
 
     while listen:
-        print_stop_sign()
         print "Listening for jobs..."
-        jobs = database.get('/jobs', None)
-        if jobs is None:
-            time.sleep(1.0)
+        print_stop_sign()
+
+        zones = build_zones()
+        
+        if button.value() == 1:
+            dispatch_button(zones, sectors)
             continue
-        for job in jobs:
-            if jobs[job] != 'true':
-                continue
-            suggested = suggest(zones, sectors, dispatch_job(job))
-            print_suggested_zone(suggested)
-            database.put('/jobs', job, suggested.get_name())
-        time.sleep(1.0)
+
+        if touch.isPressed():
+            dispatch_touch(zones, sectors)
+            continue
+
+        jobs = database.get('/jobs', None)
+        dispatch_app_job(jobs, zones, sectors)
 
 
 if __name__ == '__main__':
