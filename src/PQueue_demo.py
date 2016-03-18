@@ -5,6 +5,7 @@ import Sector
 import math
 import time
 import signal
+import datetime
 
 import pyupm_i2clcd as lcd
 import pyupm_grove as grove
@@ -15,16 +16,39 @@ from firebase import firebase
 database = firebase.FirebaseApplication('https://spot2016.firebaseio.com', None)
 LCD = lcd.Jhd1313m1(0, 0x3E, 0x62)
 listen = 1
+day = 'Monday'
+
+
+def get_day():
+    global day
+    day = datetime.datetime.today().weekday()
+    if day == 0:
+        day = 'Monday'
+    elif day == 1:
+        day = 'Tuesday'
+    elif day == 2:
+        day = 'Wednesday'
+    elif day == 3:
+        day = 'Thursday'
+    elif day == 4:
+        day = 'Friday'
+    elif day == 5:
+        day = 'Saturday'
+
+
+def del_demo_db():
+    database.put('/zones', 'demo', '')
 
 
 def sigint_handler(signum, frame):
     print('SIGINT caught, exiting gracefully...')
     global listen
     listen = 0
+    del_demo_db()
 
 
 def populate_db():
-    database.put('/zones', 'Zona 1',
+    database.put('/zones/demo', 'Zona 1',
                  {'current_cap': 0,
                   'max_cap': 20,
                   'name': 'Zona 1',
@@ -34,7 +58,7 @@ def populate_db():
                   }
                   })
 
-    database.put('/zones', 'Zona 2',
+    database.put('/zones/demo', 'Zona 2',
                  {'current_cap': 0,
                   'max_cap': 20,
                   'name': 'Zona 2',
@@ -47,7 +71,7 @@ def populate_db():
 
 def build_zones():
     zones = list()
-    db_result = database.get('/zones', None)
+    db_result = database.get('/zones/demo', None)
     for result in db_result:
         result = db_result[result]
         lat = result['position']['lat']
@@ -82,14 +106,14 @@ def get_sectors():
 
 
 def update_zone(zone):
-    database.patch('/zones/' + zone.get_name(),
+    database.patch('/zones/demo/' + zone.get_name(),
                    {'current_cap': zone.get_current_cap() + 1})
 
 
 def release_spot_zone(zone):
     print str(zone.get_current_cap())
     print str(zone.get_current_cap() - 1)
-    database.patch('/zones/' + zone.get_name(),
+    database.patch('/zones/demo/' + zone.get_name(),
                    {'current_cap': zone.get_current_cap() - 1})
 
 
@@ -142,7 +166,6 @@ def suggest(zones, sectors, user):
     else:
         print "User " + user.get_name() + " goes to: " + suggested_zone.get_name()
         print "with score = " + str(user_score(suggested_zone, sector))
-    update_zone(suggested_zone)
 
     return  suggested_zone
 
@@ -161,41 +184,46 @@ def print_suggested_zone(suggested_zone):
     LCD.write(("Go to  " + suggested_zone.get_name()).encode('utf-8'))
 
 
-def dispatch_app_job(jobs, zones, sectors):
-    if jobs is None:
-        time.sleep(0.5)
-        return
-    for job in jobs:
-        if jobs[job] != 'true':
-            continue
-        suggested = suggest(zones, sectors, get_user(job))
-        print_suggested_zone(suggested)
-        database.put('/jobs', job, 'Zone ' + suggested.get_name())
-    time.sleep(1.0)
-
-
-def dispatch_button(zones, sectors):
+def dispatch_button1(zones, sectors):
     suggested = suggest(zones, sectors, None)
     print 'Local job dispatched: in'
     print 'Go to Zone ' + suggested.get_name()
     print_suggested_zone(suggested)
+    update_zone(zones[0])
     time.sleep(1.0)
 
 
-def dispatch_touch(zones, sectors):
+def dispatch_button2(zones, sectors):
+    update_zone(zones[1])
+    time.sleep(1.0)
+
+
+def dispatch_touch1(zones, sectors):
     print 'Local job dispatched: out'
     release_spot_zone(zones[0])
     print 'Released spot from Zone ' + zones[0].get_name()
     time.sleep(1.0)
 
 
+def dispatch_touch2(zones, sectors):
+    print 'Local job dispatched: out'
+    release_spot_zone(zones[1])
+    print 'Released spot from Zone ' + zones[1].get_name()
+    time.sleep(1.0)
+
+
 def main():
     signal.signal(signal.SIGINT, sigint_handler)
-    button = grove.GroveButton(4)
-    touch = ttp223.TTP223(3)
+    button1 = grove.GroveButton(4)
+    button2 = grove.GroveButton(8)
+    touch1 = ttp223.TTP223(3)
+    touch2 = ttp223.TTP223(7)
 
     sectors = get_sectors()
-    zones = build_zones()
+
+    populate_db()
+    get_day()
+    print day
 
     LCD.setCursor(0,0)
     LCD.setColor(255, 0, 0)
@@ -206,16 +234,21 @@ def main():
 
         zones = build_zones()
 
-        if button.value() == 1:
-            dispatch_button(zones, sectors)
+        if button1.value() == 1:
+            dispatch_button1(zones, sectors)
             continue
 
-        if touch.isPressed():
-            dispatch_touch(zones, sectors)
+        if button2.value() == 1:
+            dispatch_button2(zones, sectors)
             continue
 
-        jobs = database.get('/jobs', None)
-        dispatch_app_job(jobs, zones, sectors)
+        if touch1.isPressed():
+            dispatch_touch1(zones, sectors)
+            continue
+
+        if touch2.isPressed():
+            dispatch_touch2(zones, sectors)
+            continue
 
 
 if __name__ == '__main__':
