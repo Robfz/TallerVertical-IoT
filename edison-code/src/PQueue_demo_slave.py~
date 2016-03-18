@@ -190,7 +190,7 @@ def print_zone_full(name):
     LCD.write((name + " is full").encode('utf-8'))
 
 
-def dispatch_button2(zones, sectors):
+def dispatch_button1(zones, sectors):
     if zones[1].is_full():
         print_zone_full(zones[1].get_name())
     else:
@@ -202,7 +202,7 @@ def dispatch_button2(zones, sectors):
     time.sleep(0.5)
 
 
-def dispatch_touch2(zones, sectors):
+def dispatch_touch1(zones, sectors):
     if zones[1].is_empty():
         print 'Local job dispatched: out'
         release_spot_zone(zones[1])
