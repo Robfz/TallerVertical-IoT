@@ -67,4 +67,12 @@ and and the second Edison:
 
 The code provided are only brief examples of want can be done. 
 
+### The web pages
+
+The administrators page was done in HTLM, CSS and JavaScript so that it can connect with the database. The page will help with giving out information in real time to the people in charge of security in that area. The administrator can know whether the parking lot is full or not and give an estimation of how many cars are parked in each of the areas of the parking lot. 
+
+The teams web page was developed using programing languages such as HTML and CSS, this pages is just to give information about the team members and how we developed the idea for this system that we created.
+
+We developed an app for the driver/user that needs to find a parking lot quickly. For this app, we used java for code and xml for the design. The objective of the app is help the user to find a parking lot where he needs to park. This means that depending on their schedule for that day, they app will recommend the user where to park and the user will let know the app whether they parked in that zone or not.
+
 Contributions are encouraged!
