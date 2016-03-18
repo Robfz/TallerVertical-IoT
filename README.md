@@ -90,4 +90,7 @@ And now we add the name and slogan in a cool typography and we are done with the
 
 ![ds](http://www.credipass.com.mx/TallerVertical-IoT-Web/SpotPrinciple/img/Spot-Slogan.png)
 
+### Promotional video
+[https://www.youtube.com/watch?v=YOVR1ADl7F8&feature=youtu.be](https://www.youtube.com/watch?v=YOVR1ADl7F8&feature=youtu.be)
+
 Contributions are encouraged!
